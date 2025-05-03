@@ -159,6 +159,10 @@
             let lastTouchX = 0;
             let lastTouchY = 0;
 
+            // Track touch points for pinch-to-zoom
+            let initialDistance = 0;
+            let initialScale = 1;
+
             // Drag and drop handling
             document.addEventListener('dragenter', function(e) {
                 e.preventDefault();
@@ -294,26 +298,63 @@
             // Touch and touchpad event handling
             imageStack.addEventListener('touchstart', handleTouchStart, { passive: false });
             imageStack.addEventListener('touchmove', handleTouchMove, { passive: false });
-            imageStack.addEventListener('touchend', stopDragging);
+            imageStack.addEventListener('touchend', handleTouchEnd);
+
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
 
             function handleTouchStart(e) {
                 e.preventDefault();
-                isDragging = true;
-                imageStack.classList.add('dragging');
-                const touch = e.touches[0];
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
-                startX = touch.clientX - currentX;
-                startY = touch.clientY - currentY;
+                
+                if (e.touches.length === 2) {
+                    // Pinch gesture starting
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                    initialScale = scale;
+                } else if (e.touches.length === 1) {
+                    // Single touch for panning
+                    isDragging = true;
+                    imageStack.classList.add('dragging');
+                    const touch = e.touches[0];
+                    lastTouchX = touch.clientX;
+                    lastTouchY = touch.clientY;
+                    startX = touch.clientX - currentX;
+                    startY = touch.clientY - currentY;
+                }
             }
 
             function handleTouchMove(e) {
-                if (!isDragging) return;
                 e.preventDefault();
-                const touch = e.touches[0];
-                currentX = touch.clientX - startX;
-                currentY = touch.clientY - startY;
-                updateTransform();
+                
+                if (e.touches.length === 2) {
+                    // Handle pinch gesture
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scaleFactor = currentDistance / initialDistance;
+                    
+                    // Calculate new scale based on initial scale when pinch started
+                    scale = Math.min(Math.max(initialScale * scaleFactor, MIN_SCALE), MAX_SCALE);
+                    updateTransform();
+                } else if (e.touches.length === 1 && isDragging) {
+                    // Handle single touch panning
+                    const touch = e.touches[0];
+                    currentX = touch.clientX - startX;
+                    currentY = touch.clientY - startY;
+                    updateTransform();
+                }
+            }
+
+            function handleTouchEnd(e) {
+                if (e.touches.length < 2) {
+                    // Reset pinch tracking when less than 2 fingers
+                    initialDistance = 0;
+                }
+                if (e.touches.length === 0) {
+                    // Reset panning when no fingers
+                    isDragging = false;
+                    imageStack.classList.remove('dragging');
+                }
             }
 
             // Add touchpad (trackpad) gesture support
@@ -321,10 +362,20 @@
 
             function handleWheel(e) {
                 e.preventDefault();
-                // Update position based on wheel deltas
-                currentX += e.deltaX * -1;
-                currentY += e.deltaY * -1;
-                updateTransform();
+                
+                // Check if this is a zoom gesture (Ctrl/Cmd key or touchpad pinch)
+                if (e.ctrlKey || e.metaKey) {
+                    // Convert wheel delta to zoom factor
+                    const zoomFactor = -e.deltaY * 0.01;
+                    const newScale = scale * (1 + zoomFactor);
+                    scale = Math.min(Math.max(newScale, MIN_SCALE), MAX_SCALE);
+                    updateTransform();
+                } else {
+                    // Regular panning
+                    currentX += e.deltaX * -1;
+                    currentY += e.deltaY * -1;
+                    updateTransform();
+                }
             }
 
             // Initialize image visibility
