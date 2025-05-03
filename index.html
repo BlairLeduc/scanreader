@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Newspaper Scan Reader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -18,14 +19,12 @@
             left: 0;
             right: 0;
             background: white;
-            padding: 10px 0;
+            padding: 10px 20px;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: grid;
             grid-template-columns: 200px 1fr 200px;
             align-items: center;
-            padding-left: 20px;
-            padding-right: 20px;
         }
 
         .controls-group {
@@ -33,17 +32,6 @@
             align-items: center;
             gap: 20px;
             justify-content: center;
-        }
-
-        .zoom-controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        .zoom-btn {
-            padding: 5px 10px;
-            font-size: 18px;
-            cursor: pointer;
         }
 
         .container {
@@ -120,79 +108,9 @@
             min-width: 100px;
         }
 
-        .spacer {
-            width: 200px;
-        }
-
-        .about-btn {
-            padding: 5px 15px;
-            font-size: 14px;
-            cursor: pointer;
-            background: #f0f0f0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-left: auto;
-        }
-
-        .about-btn:hover {
-            background: #e0e0e0;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
         .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 600px;
-            width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            position: relative;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 24px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 5px 10px;
-        }
-
-        .close-btn:hover {
-            color: #666;
-        }
-
-        .modal-content h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-
-        .modal-content ul {
-            padding-left: 20px;
-            margin-bottom: 20px;
-        }
-
-        .modal-content li {
-            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -201,45 +119,64 @@
     <div class="slider-container">
         <div class="filename-display"></div>
         <div class="controls-group">
-            <div class="zoom-controls">
-                <button class="zoom-btn" id="zoom-out">−</button>
-                <button class="zoom-btn" id="zoom-in">+</button>
+            <div class="btn-group" role="group" aria-label="Zoom controls">
+                <button class="btn btn-outline-secondary zoom-btn" id="zoom-out">−</button>
+                <button class="btn btn-outline-secondary zoom-btn" id="zoom-in">+</button>
             </div>
-            <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
+            <input type="range" class="form-range" id="brightness-slider" min="0" max="100" value="0" disabled>
         </div>
-        <button class="about-btn">About</button>
+        <button class="btn btn-outline-primary about-btn">About</button>
     </div>
 
-    <div class="modal" id="aboutModal">
-        <div class="modal-content">
-            <button class="close-btn">&times;</button>
-            <h2>How to Use This Viewer</h2>
-            <ul>
-                <li><strong>Loading Images:</strong> Drag and drop your numbered image sequence onto the page. Images should be named with a number at the end (e.g., "scan 1.jpg", "scan 2.jpg").</li>
-                <li><strong>Viewing Images:</strong> Use the slider at the top to smoothly transition between images in the sequence.</li>
-                <li><strong>Zooming:</strong>
-                    <ul>
-                        <li>Use the + and - buttons</li>
-                        <li>Pinch gesture on touchpad/touchscreen</li>
-                        <li>Hold Ctrl/Cmd while scrolling</li>
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aboutModalLabel">How to Use This Viewer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <strong>Loading Images:</strong><br>
+                            Drag and drop your numbered image sequence onto the page. Images should be named with a number at the end (e.g., "scan 1.jpg", "scan 2.jpg").
+                        </li>
+                        <li class="mb-3">
+                            <strong>Viewing Images:</strong><br>
+                            Use the slider at the top to smoothly transition between images in the sequence.
+                        </li>
+                        <li class="mb-3">
+                            <strong>Zooming:</strong>
+                            <ul class="list-unstyled ms-3">
+                                <li>• Use the + and - buttons</li>
+                                <li>• Pinch gesture on touchpad/touchscreen</li>
+                                <li>• Hold Ctrl/Cmd while scrolling</li>
+                            </ul>
+                        </li>
+                        <li class="mb-3">
+                            <strong>Panning:</strong>
+                            <ul class="list-unstyled ms-3">
+                                <li>• Click and drag with mouse</li>
+                                <li>• Two-finger scroll on touchpad</li>
+                                <li>• Drag with one finger on touchscreen</li>
+                            </ul>
+                        </li>
                     </ul>
-                </li>
-                <li><strong>Panning:</strong>
-                    <ul>
-                        <li>Click and drag with mouse</li>
-                        <li>Two-finger scroll on touchpad</li>
-                        <li>Drag with one finger on touchscreen</li>
-                    </ul>
-                </li>
-            </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
+
     <div class="container">
         <div class="image-stack">
             <div class="initial-message">Drag and drop your numbered images here<br>(filenames should end with a space and number)</div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const slider = document.getElementById('brightness-slider');
@@ -502,26 +439,15 @@
             }
 
             // About modal functionality
+            const aboutModal = new bootstrap.Modal(document.getElementById('aboutModal'));
             const aboutBtn = document.querySelector('.about-btn');
-            const modal = document.getElementById('aboutModal');
-            const closeBtn = modal.querySelector('.close-btn');
 
             aboutBtn.addEventListener('click', () => {
-                modal.classList.add('active');
+                aboutModal.show();
             });
 
-            closeBtn.addEventListener('click', () => {
-                modal.classList.remove('active');
-            });
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                }
-            });
-
-            // Close modal on escape key
-            document.addEventListener('keydown', (e) => {
+            // Remove old modal event listeners as they're handled by Bootstrap
+            document.removeEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && modal.classList.contains('active')) {
                     modal.classList.remove('active');
                 }
