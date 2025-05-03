@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Brightness Slider</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .slider-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 10px 0;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            padding: 5px 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .container {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .image-stack {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            cursor: grab;
+        }
+
+        .image-stack.dragging {
+            cursor: grabbing;
+        }
+
+        .image-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #brightness-slider {
+            width: 40%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slider-container">
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="zoom-out">−</button>
+            <button class="zoom-btn" id="zoom-in">+</button>
+        </div>
+        <input type="range" id="brightness-slider" min="0" max="100" value="0">
+    </div>
+    <div class="container">
+        <div class="image-stack">
+            <img src="image1.png" alt="Brightness Level 1" class="image-layer" id="image1" draggable="false">
+            <img src="image2.png" alt="Brightness Level 2" class="image-layer" id="image2" draggable="false">
+            <img src="image3.png" alt="Brightness Level 3" class="image-layer" id="image3" draggable="false">
+            <img src="image4.png" alt="Brightness Level 4" class="image-layer" id="image4" draggable="false">
+            <img src="image5.png" alt="Brightness Level 5" class="image-layer" id="image5" draggable="false">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.getElementById('brightness-slider');
+            const imageStack = document.querySelector('.image-stack');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const images = [
+                document.getElementById('image1'),
+                document.getElementById('image2'),
+                document.getElementById('image3'),
+                document.getElementById('image4'),
+                document.getElementById('image5')
+            ];
+
+            // Pan functionality
+            let isDragging = false;
+            let startX, startY, initialX = 0, initialY = 0;
+            let currentX = 0, currentY = 0;
+
+            // Zoom functionality
+            let scale = 1;
+            const ZOOM_STEP = 0.1;
+            const MIN_SCALE = 0.5;
+            const MAX_SCALE = 3;
+
+            // Initialize image visibility
+            updateImageOpacity(0);
+
+            // Brightness slider
+            slider.addEventListener('input', function(e) {
+                const value = parseInt(e.target.value);
+                updateImageOpacity(value);
+            });
+
+            function updateImageOpacity(sliderValue) {
+                const segment = 25;
+                const imageIndex = Math.floor(sliderValue / segment);
+                const opacity = (sliderValue % segment) / segment;
+
+                images.forEach(img => img.style.opacity = '0');
+                images[imageIndex].style.opacity = '1';
+
+                if (imageIndex < images.length - 1) {
+                    images[imageIndex + 1].style.opacity = opacity;
+                }
+            }
+
+            // Zoom controls
+            zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale + ZOOM_STEP, MAX_SCALE);
+                updateTransform();
+            });
+
+            zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale - ZOOM_STEP, MIN_SCALE);
+                updateTransform();
+            });
+
+            // Pan controls
+            imageStack.addEventListener('mousedown', startDragging);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDragging);
+
+            function startDragging(e) {
+                e.preventDefault();
+                isDragging = true;
+                imageStack.classList.add('dragging');
+                startX = e.clientX - currentX;
+                startY = e.clientY - currentY;
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                currentX = e.clientX - startX;
+                currentY = e.clientY - startY;
+                updateTransform();
+            }
+
+            function stopDragging() {
+                isDragging = false;
+                imageStack.classList.remove('dragging');
+            }
+
+            function updateTransform() {
+                imageStack.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+            }
+
+            // Prevent image dragging
+            images.forEach(img => {
+                img.addEventListener('dragstart', (e) => e.preventDefault());
+            });
+        });
+    </script>
+</body>
+</html>
