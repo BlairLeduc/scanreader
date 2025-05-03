@@ -76,23 +76,49 @@
             width: 40%;
             max-width: 400px;
         }
+
+        .drop-zone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            color: white;
+            font-size: 24px;
+        }
+
+        .drop-zone.active {
+            display: flex;
+        }
+
+        .initial-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
+    <div class="drop-zone">Drop images here</div>
     <div class="slider-container">
         <div class="zoom-controls">
             <button class="zoom-btn" id="zoom-out">−</button>
             <button class="zoom-btn" id="zoom-in">+</button>
         </div>
-        <input type="range" id="brightness-slider" min="0" max="100" value="0">
+        <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
     </div>
     <div class="container">
         <div class="image-stack">
-            <img src="image1.png" alt="Brightness Level 1" class="image-layer" id="image1" draggable="false">
-            <img src="image2.png" alt="Brightness Level 2" class="image-layer" id="image2" draggable="false">
-            <img src="image3.png" alt="Brightness Level 3" class="image-layer" id="image3" draggable="false">
-            <img src="image4.png" alt="Brightness Level 4" class="image-layer" id="image4" draggable="false">
-            <img src="image5.png" alt="Brightness Level 5" class="image-layer" id="image5" draggable="false">
+            <div class="initial-message">Drag and drop your numbered images here<br>(filenames should end with a space and number)</div>
         </div>
     </div>
 
@@ -100,29 +126,89 @@
         document.addEventListener('DOMContentLoaded', function() {
             const slider = document.getElementById('brightness-slider');
             const imageStack = document.querySelector('.image-stack');
+            const dropZone = document.querySelector('.drop-zone');
+            const initialMessage = document.querySelector('.initial-message');
             const zoomInBtn = document.getElementById('zoom-in');
             const zoomOutBtn = document.getElementById('zoom-out');
-            const images = [
-                document.getElementById('image1'),
-                document.getElementById('image2'),
-                document.getElementById('image3'),
-                document.getElementById('image4'),
-                document.getElementById('image5')
-            ];
+            let images = [];
 
-            // Pan functionality
+            // Pan and zoom functionality
             let isDragging = false;
             let startX, startY, initialX = 0, initialY = 0;
             let currentX = 0, currentY = 0;
-
-            // Zoom functionality
             let scale = 1;
             const ZOOM_STEP = 0.1;
             const MIN_SCALE = 0.5;
             const MAX_SCALE = 3;
+            
+            // Track last touch position
+            let lastTouchX = 0;
+            let lastTouchY = 0;
 
-            // Initialize image visibility
-            updateImageOpacity(0);
+            // Drag and drop handling
+            document.addEventListener('dragenter', function(e) {
+                e.preventDefault();
+                dropZone.classList.add('active');
+            });
+
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('active');
+            });
+
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+
+            dropZone.addEventListener('drop', async function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('active');
+                
+                const files = Array.from(e.dataTransfer.files)
+                    .filter(file => file.type.startsWith('image/'));
+
+                if (files.length === 0) {
+                    alert('Please drop image files only');
+                    return;
+                }
+
+                // Clear existing images
+                imageStack.innerHTML = '';
+                images = [];
+
+                // Sort files based on trailing number in filename
+                const sortedFiles = files.sort((a, b) => {
+                    const numA = parseInt(a.name.match(/\s(\d+)$/)?.[1] || '0');
+                    const numB = parseInt(b.name.match(/\s(\d+)$/)?.[1] || '0');
+                    return numA - numB;
+                });
+
+                // Create and load images
+                for (let file of sortedFiles) {
+                    const img = document.createElement('img');
+                    img.classList.add('image-layer');
+                    img.draggable = false;
+                    img.style.opacity = '0';
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    imageStack.appendChild(img);
+                    images.push(img);
+                    
+                    // Prevent image dragging
+                    img.addEventListener('dragstart', (e) => e.preventDefault());
+                }
+
+                // Enable slider and set initial image
+                slider.disabled = false;
+                slider.value = 0;
+                updateImageOpacity(0);
+                initialMessage.style.display = 'none';
+            });
 
             // Brightness slider
             slider.addEventListener('input', function(e) {
@@ -131,6 +217,8 @@
             });
 
             function updateImageOpacity(sliderValue) {
+                if (images.length === 0) return;
+                
                 const segment = 25;
                 const imageIndex = Math.floor(sliderValue / segment);
                 const opacity = (sliderValue % segment) / segment;
@@ -184,19 +272,10 @@
                 imageStack.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
             }
 
-            // Prevent image dragging
-            images.forEach(img => {
-                img.addEventListener('dragstart', (e) => e.preventDefault());
-            });
-
             // Touch and touchpad event handling
             imageStack.addEventListener('touchstart', handleTouchStart, { passive: false });
             imageStack.addEventListener('touchmove', handleTouchMove, { passive: false });
             imageStack.addEventListener('touchend', stopDragging);
-
-            // Track last touch position
-            let lastTouchX = 0;
-            let lastTouchY = 0;
 
             function handleTouchStart(e) {
                 e.preventDefault();
@@ -228,6 +307,9 @@
                 currentY += e.deltaY * -1;
                 updateTransform();
             }
+
+            // Initialize image visibility
+            updateImageOpacity(0);
         });
     </script>
 </body>
