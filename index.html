@@ -54,6 +54,7 @@
             height: 100%;
             transform-origin: center;
             cursor: grab;
+            touch-action: none; /* Prevent browser touch actions */
         }
 
         .image-stack.dragging {
@@ -187,6 +188,46 @@
             images.forEach(img => {
                 img.addEventListener('dragstart', (e) => e.preventDefault());
             });
+
+            // Touch and touchpad event handling
+            imageStack.addEventListener('touchstart', handleTouchStart, { passive: false });
+            imageStack.addEventListener('touchmove', handleTouchMove, { passive: false });
+            imageStack.addEventListener('touchend', stopDragging);
+
+            // Track last touch position
+            let lastTouchX = 0;
+            let lastTouchY = 0;
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                isDragging = true;
+                imageStack.classList.add('dragging');
+                const touch = e.touches[0];
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+                startX = touch.clientX - currentX;
+                startY = touch.clientY - currentY;
+            }
+
+            function handleTouchMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                currentX = touch.clientX - startX;
+                currentY = touch.clientY - startY;
+                updateTransform();
+            }
+
+            // Add touchpad (trackpad) gesture support
+            imageStack.addEventListener('wheel', handleWheel, { passive: false });
+
+            function handleWheel(e) {
+                e.preventDefault();
+                // Update position based on wheel deltas
+                currentX += e.deltaX * -1;
+                currentY += e.deltaY * -1;
+                updateTransform();
+            }
         });
     </script>
 </body>
