@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Brightness Slider</title>
+    <title>Newspaper Scan Reader</title>
     <style>
         body {
             margin: 0;
@@ -19,13 +19,20 @@
             right: 0;
             background: white;
             padding: 10px 0;
-            text-align: center;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 200px 1fr 200px;
+            align-items: center;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .controls-group {
             display: flex;
-            justify-content: center;
             align-items: center;
             gap: 20px;
+            justify-content: center;
         }
 
         .zoom-controls {
@@ -107,28 +114,30 @@
         }
 
         .filename-display {
-            position: fixed;
-            top: 70px;
-            left: 20px;
             font-size: 16px;
             color: #333;
-            z-index: 1001;
-            background: rgba(255, 255, 255, 0.8);
             padding: 5px 10px;
-            border-radius: 4px;
+            min-width: 100px;
+        }
+
+        .spacer {
+            width: 200px;
         }
     </style>
 </head>
 <body>
     <div class="drop-zone">Drop images here</div>
     <div class="slider-container">
-        <div class="zoom-controls">
-            <button class="zoom-btn" id="zoom-out">−</button>
-            <button class="zoom-btn" id="zoom-in">+</button>
+        <div class="filename-display"></div>
+        <div class="controls-group">
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-out">−</button>
+                <button class="zoom-btn" id="zoom-in">+</button>
+            </div>
+            <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
         </div>
-        <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
+        <div class="spacer"></div>
     </div>
-    <div class="filename-display"></div>
     <div class="container">
         <div class="image-stack">
             <div class="initial-message">Drag and drop your numbered images here<br>(filenames should end with a space and number)</div>
@@ -256,13 +265,13 @@
 
             // Zoom controls
             zoomInBtn.addEventListener('click', () => {
-                scale = Math.min(scale + ZOOM_STEP, MAX_SCALE);
-                updateTransform();
+                const newScale = Math.min(scale + ZOOM_STEP, MAX_SCALE);
+                zoomRelativeToCenter(newScale);
             });
 
             zoomOutBtn.addEventListener('click', () => {
-                scale = Math.max(scale - ZOOM_STEP, MIN_SCALE);
-                updateTransform();
+                const newScale = Math.max(scale - ZOOM_STEP, MIN_SCALE);
+                zoomRelativeToCenter(newScale);
             });
 
             // Pan controls
@@ -293,6 +302,24 @@
 
             function updateTransform() {
                 imageStack.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+            }
+
+            function zoomRelativeToCenter(newScale) {
+                // Get the container dimensions
+                const containerRect = imageStack.parentElement.getBoundingClientRect();
+                const containerCenterX = containerRect.width / 2;
+                const containerCenterY = containerRect.height / 2;
+
+                // Calculate how much the scale is changing
+                const scaleFactor = newScale / scale;
+                
+                // Adjust the position to keep the center point stable
+                currentX = containerCenterX - (containerCenterX - currentX) * scaleFactor;
+                currentY = containerCenterY - (containerCenterY - currentY) * scaleFactor;
+                
+                // Update the scale
+                scale = newScale;
+                updateTransform();
             }
 
             // Touch and touchpad event handling
@@ -334,8 +361,8 @@
                     const scaleFactor = currentDistance / initialDistance;
                     
                     // Calculate new scale based on initial scale when pinch started
-                    scale = Math.min(Math.max(initialScale * scaleFactor, MIN_SCALE), MAX_SCALE);
-                    updateTransform();
+                    const newScale = Math.min(Math.max(initialScale * scaleFactor, MIN_SCALE), MAX_SCALE);
+                    zoomRelativeToCenter(newScale);
                 } else if (e.touches.length === 1 && isDragging) {
                     // Handle single touch panning
                     const touch = e.touches[0];
@@ -368,8 +395,8 @@
                     // Convert wheel delta to zoom factor
                     const zoomFactor = -e.deltaY * 0.01;
                     const newScale = scale * (1 + zoomFactor);
-                    scale = Math.min(Math.max(newScale, MIN_SCALE), MAX_SCALE);
-                    updateTransform();
+                    const clampedScale = Math.min(Math.max(newScale, MIN_SCALE), MAX_SCALE);
+                    zoomRelativeToCenter(clampedScale);
                 } else {
                     // Regular panning
                     currentX += e.deltaX * -1;
