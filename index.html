@@ -123,6 +123,77 @@
         .spacer {
             width: 200px;
         }
+
+        .about-btn {
+            padding: 5px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .about-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 5px 10px;
+        }
+
+        .close-btn:hover {
+            color: #666;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .modal-content ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        .modal-content li {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +207,32 @@
             </div>
             <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
         </div>
-        <div class="spacer"></div>
+        <button class="about-btn">About</button>
+    </div>
+
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <button class="close-btn">&times;</button>
+            <h2>How to Use This Viewer</h2>
+            <ul>
+                <li><strong>Loading Images:</strong> Drag and drop your numbered image sequence onto the page. Images should be named with a number at the end (e.g., "scan 1.jpg", "scan 2.jpg").</li>
+                <li><strong>Viewing Images:</strong> Use the slider at the top to smoothly transition between images in the sequence.</li>
+                <li><strong>Zooming:</strong>
+                    <ul>
+                        <li>Use the + and - buttons</li>
+                        <li>Pinch gesture on touchpad/touchscreen</li>
+                        <li>Hold Ctrl/Cmd while scrolling</li>
+                    </ul>
+                </li>
+                <li><strong>Panning:</strong>
+                    <ul>
+                        <li>Click and drag with mouse</li>
+                        <li>Two-finger scroll on touchpad</li>
+                        <li>Drag with one finger on touchscreen</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
     </div>
     <div class="container">
         <div class="image-stack">
@@ -404,6 +500,32 @@
                     updateTransform();
                 }
             }
+
+            // About modal functionality
+            const aboutBtn = document.querySelector('.about-btn');
+            const modal = document.getElementById('aboutModal');
+            const closeBtn = modal.querySelector('.close-btn');
+
+            aboutBtn.addEventListener('click', () => {
+                modal.classList.add('active');
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+
+            // Close modal on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    modal.classList.remove('active');
+                }
+            });
 
             // Initialize image visibility
             updateImageOpacity(0);
