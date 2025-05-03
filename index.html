@@ -105,6 +105,18 @@
             font-size: 18px;
             color: #666;
         }
+
+        .filename-display {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            font-size: 16px;
+            color: #333;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -116,6 +128,7 @@
         </div>
         <input type="range" id="brightness-slider" min="0" max="100" value="0" disabled>
     </div>
+    <div class="filename-display"></div>
     <div class="container">
         <div class="image-stack">
             <div class="initial-message">Drag and drop your numbered images here<br>(filenames should end with a space and number)</div>
@@ -130,6 +143,7 @@
             const initialMessage = document.querySelector('.initial-message');
             const zoomInBtn = document.getElementById('zoom-in');
             const zoomOutBtn = document.getElementById('zoom-out');
+            const filenameDisplay = document.querySelector('.filename-display');
             let images = [];
 
             // Pan and zoom functionality
@@ -172,16 +186,21 @@
                     return;
                 }
 
-                // Clear existing images
-                imageStack.innerHTML = '';
-                images = [];
-
                 // Sort files based on trailing number in filename
                 const sortedFiles = files.sort((a, b) => {
                     const numA = parseInt(a.name.match(/\s(\d+)$/)?.[1] || '0');
                     const numB = parseInt(b.name.match(/\s(\d+)$/)?.[1] || '0');
                     return numA - numB;
                 });
+
+                // Display the base filename of the first file
+                const firstFileName = sortedFiles[0].name;
+                const baseFileName = firstFileName.replace(/\s+\d+\.[^.]+$/, '');
+                filenameDisplay.textContent = baseFileName;
+
+                // Clear existing images
+                imageStack.innerHTML = '';
+                images = [];
 
                 // Create and load images
                 for (let file of sortedFiles) {
