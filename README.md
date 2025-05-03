@@ -1,4 +1,4 @@
-# Image Viewer
+# Newspaper Scan Reader Viewer
 
 An interactive web-based viewer that allows users to view and compare a sequence of related images or PDF pages with smooth transitions. Perfect for viewing image sequences that show gradual changes, such as different exposure levels or temporal changes, or for comparing pages across multiple PDF documents.
 
@@ -56,3 +56,7 @@ Tested and working in:
 - Firefox (latest version)
 - Safari (latest version)
 - Mobile browsers (iOS Safari, Chrome for Android)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
