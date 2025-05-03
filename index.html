@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Newspaper Scan Reader</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -67,6 +68,17 @@
             -webkit-user-drag: none;
         }
 
+        .canvas-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
         #brightness-slider {
             width: 40%;
             max-width: 400px;
@@ -115,7 +127,7 @@
     </style>
 </head>
 <body>
-    <div class="drop-zone">Drop images here</div>
+    <div class="drop-zone">Drop images or PDFs here</div>
     <div class="slider-container">
         <div class="filename-display"></div>
         <div class="controls-group">
@@ -138,12 +150,17 @@
                 <div class="modal-body">
                     <ul class="list-unstyled">
                         <li class="mb-3">
-                            <strong>Loading Images:</strong><br>
-                            Drag and drop your numbered image sequence onto the page. Images should be named with a number at the end (e.g., "scan 1.jpg", "scan 2.jpg").
+                            <strong>Loading Files:</strong><br>
+                            You can:
+                            <ul class="list-unstyled ms-3">
+                                <li>• Drag and drop a sequence of numbered images (e.g., "scan 1.jpg", "scan 2.jpg")</li>
+                                <li>• Drag and drop one or more PDF files to view their pages in order</li>
+                                <li>• Mix both images and PDFs in a single drop</li>
+                            </ul>
                         </li>
                         <li class="mb-3">
                             <strong>Viewing Images:</strong><br>
-                            Use the slider at the top to smoothly transition between images in the sequence.
+                            Use the slider at the top to smoothly transition between images or PDF pages.
                         </li>
                         <li class="mb-3">
                             <strong>Zooming:</strong>
@@ -172,12 +189,15 @@
 
     <div class="container">
         <div class="image-stack">
-            <div class="initial-message">Drag and drop your numbered images here<br>(filenames should end with a space and number)</div>
+            <div class="initial-message">Drag and drop your numbered images or PDF files here</div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Set up PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         document.addEventListener('DOMContentLoaded', function() {
             const slider = document.getElementById('brightness-slider');
             const imageStack = document.querySelector('.image-stack');
@@ -224,11 +244,12 @@
                 e.preventDefault();
                 dropZone.classList.remove('active');
                 
-                const files = Array.from(e.dataTransfer.files)
-                    .filter(file => file.type.startsWith('image/'));
+                const files = Array.from(e.dataTransfer.files);
+                const imageFiles = files.filter(file => file.type.startsWith('image/'));
+                const pdfFiles = files.filter(file => file.type === 'application/pdf');
 
-                if (files.length === 0) {
-                    alert('Please drop image files only');
+                if (imageFiles.length === 0 && pdfFiles.length === 0) {
+                    alert('Please drop images or PDF files');
                     return;
                 }
 
@@ -238,24 +259,56 @@
                 scale = 1;
                 updateTransform();
 
-                // Sort files based on trailing number in filename
-                const sortedFiles = files.sort((a, b) => {
+                // Clear existing images
+                imageStack.innerHTML = '';
+                images = [];
+
+                // Sort all files by name
+                const sortedPdfFiles = pdfFiles.sort((a, b) => {
+                    const nameA = a.name.toLowerCase();
+                    const nameB = b.name.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+
+                const sortedImageFiles = imageFiles.sort((a, b) => {
                     const numA = parseInt(a.name.match(/\s(\d+)$/)?.[1] || '0');
                     const numB = parseInt(b.name.match(/\s(\d+)$/)?.[1] || '0');
                     return numA - numB;
                 });
 
-                // Display the base filename of the first file
-                const firstFileName = sortedFiles[0].name;
-                const baseFileName = firstFileName.replace(/\s+\d+\.[^.]+$/, '');
+                // Set filename display from first file (either PDF or image)
+                const firstFile = sortedPdfFiles[0] || sortedImageFiles[0];
+                const baseFileName = firstFile.name.replace(/(?:\s+\d+)?\.(?:pdf|[^.]+)$/i, '');
                 filenameDisplay.textContent = baseFileName;
 
-                // Clear existing images
-                imageStack.innerHTML = '';
-                images = [];
+                // Process PDF files
+                for (const pdfFile of sortedPdfFiles) {
+                    const arrayBuffer = await pdfFile.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 4.0 });
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        canvas.classList.add('canvas-layer');
+                        canvas.style.opacity = '0';
+                        
+                        const context = canvas.getContext('2d');
+                        await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise;
+                        
+                        imageStack.appendChild(canvas);
+                        images.push(canvas);
+                    }
+                }
 
-                // Create and load images
-                for (let file of sortedFiles) {
+                // Process image files
+                for (const file of sortedImageFiles) {
                     const img = document.createElement('img');
                     img.classList.add('image-layer');
                     img.draggable = false;
@@ -270,7 +323,6 @@
                     imageStack.appendChild(img);
                     images.push(img);
                     
-                    // Prevent image dragging
                     img.addEventListener('dragstart', (e) => e.preventDefault());
                 }
 
