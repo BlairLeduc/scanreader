@@ -1,4 +1,4 @@
-# Newspaper Scan Reader Viewer
+# Newspaper Scan Reader
 
 An interactive web-based viewer that allows users to view and compare a sequence of related images or PDF pages with smooth transitions. Perfect for viewing image sequences that show gradual changes, such as different exposure levels or temporal changes, or for comparing pages across multiple PDF documents.
 
