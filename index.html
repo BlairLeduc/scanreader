@@ -123,7 +123,7 @@
                 <button class="btn btn-outline-secondary zoom-btn" id="zoom-out">−</button>
                 <button class="btn btn-outline-secondary zoom-btn" id="zoom-in">+</button>
             </div>
-            <input type="range" class="form-range" id="brightness-slider" min="0" max="100" value="0" disabled>
+            <input type="range" class="form-range" id="brightness-slider" min="0" max="100" value="50" disabled>
         </div>
         <button class="btn btn-outline-primary about-btn">About</button>
     </div>
@@ -232,6 +232,12 @@
                     return;
                 }
 
+                // Reset pan and zoom
+                currentX = 0;
+                currentY = 0;
+                scale = 1;
+                updateTransform();
+
                 // Sort files based on trailing number in filename
                 const sortedFiles = files.sort((a, b) => {
                     const numA = parseInt(a.name.match(/\s(\d+)$/)?.[1] || '0');
@@ -270,8 +276,8 @@
 
                 // Enable slider and set initial image
                 slider.disabled = false;
-                slider.value = 0;
-                updateImageOpacity(0);
+                slider.value = 50;  // Start in middle
+                updateImageOpacity(50);
                 initialMessage.style.display = 'none';
             });
 
@@ -283,6 +289,9 @@
 
             function updateImageOpacity(sliderValue) {
                 if (images.length === 0) return;
+                
+                // Reverse the slider value
+                sliderValue = 100 - sliderValue;
                 
                 const segment = 25;
                 const imageIndex = Math.floor(sliderValue / segment);
@@ -453,8 +462,8 @@
                 }
             });
 
-            // Initialize image visibility
-            updateImageOpacity(0);
+            // Initialize image visibility with middle position
+            updateImageOpacity(50);
         });
     </script>
 </body>
